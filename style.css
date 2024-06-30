@@ -37,11 +37,31 @@ h1{
 }
 
 .b-primary:hover {
-    background: #0056b3;
+    background: #055ebd;
 }
 
 .b-primary:active {
     background: #004f9b;
+    transform: scale(0.96);
+}
+
+.b-secondary {
+    background: #888888;
+    color: #fff;
+    border: none;
+    padding: 15px 25px;
+    font-size: 1.0rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.b-secondary:hover {
+    background: #767676;
+}
+
+.b-secondary:active {
+    background: #535353;
     transform: scale(0.96);
 }
 

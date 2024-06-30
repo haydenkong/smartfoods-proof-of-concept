@@ -21,15 +21,26 @@
     <link href="https://pixelverse.tech/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
     
     <style>
-        #productList {
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .left-panel, .right-panel {
+            width: 48%;
+        }
+        #productList, #storedList {
             list-style-type: none;
             padding: 0;
         }
-        #productList li {
+        #productList li, #storedList li {
             background-color: #f0f0f0;
             margin: 5px 0;
             padding: 10px;
             border-radius: 5px;
+        }
+        .edit-input {
+            width: 70%;
+            margin-right: 5px;
         }
     </style>
 </head>
@@ -43,26 +54,32 @@
         </div>
     </a>
 
-
-    <div class="content">
-        <div class="h1-container">
-            
-            
-            <h2>Receipt to List</h2>
-            <p>Take a picture of your receipt and use AI to magically extract all your items you purchased into a neat list!</p>
+    <div class="container">
+        <div class="left-panel">
+            <div class="content">
+                <div class="h1-container">
+                    <h2>Receipt to List</h2>
+                    <p>Take a picture of your receipt and use AI to magically extract all your items you purchased into a neat list!</p>
+                </div>
+                <form id="uploadForm">
+                    <input class="img-upload" type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
+                    <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
+                        Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>
+                    </button>
+                    <img id="uploadedImage" style="margin-top: 10px; width: 250px; display: none;" alt="Uploaded Image">
+                </form>
+                <div id="result" class="output-text-container">
+                    <ul id="productList"></ul>
+                </div>
+                <button id="editButton" style="display:none;" class="b-secondary"><i class="fa-solid fa-pen" style="margin-right: 5px;"></i>Edit</button>
+                <button id="addButton" style="display:none;" class="b-primary"><i class="fa-solid fa-plus" style="margin-right: 5px;"></i>Add to List</button>
+            </div>
         </div>
-        <form id="uploadForm">
-            <input class="img-upload" type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
-            <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
-                Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>
-            </button>
-            <img id="uploadedImage" style="margin-top: 10px; width: 250px; display: none;" alt="Uploaded Image">
-        </form>
-        <div id="result" class="output-text-container">
-            <ul id="productList"></ul>
+        <div class="right-panel">
+            <h2>Stored Items</h2>
+            <ul id="storedList"></ul>
         </div>
     </div>
-
 
     <script type="importmap">
         {
@@ -74,6 +91,8 @@
 
     <script type="module">
         import { HarmCategory, HarmBlockThreshold, GoogleGenerativeAI } from "@google/generative-ai";
+
+        let currentProducts = [];
 
         document.getElementById('imageInput').addEventListener('change', function(event) {
             const imageInput = document.getElementById('imageInput');
@@ -109,6 +128,8 @@
                 const resultText = await processImageAndText(file);
                 displayResult(resultText);
                 document.getElementById("generateButton").innerHTML = 'Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+                document.getElementById("editButton").style.display = 'inline-block';
+                document.getElementById("addButton").style.display = 'inline-block';
             } catch (error) {
                 console.error('Error processing the request:', error);
                 document.getElementById('result').innerText = 'Error: ' + error.message;
@@ -167,7 +188,6 @@
             const result = await model.generateContent(content);
             const response = await result.response;
             return response.text();
-            console.log(resultText)
         }
 
         function displayResult(resultText) {
@@ -176,9 +196,11 @@
             productList.innerHTML = ''; // Clear previous results
 
             if (resultObj.isReceipt) {
-                resultObj.products.forEach(product => {
+                currentProducts = resultObj.products;
+                resultObj.products.forEach((product, index) => {
                     const li = document.createElement('li');
                     li.textContent = `${product.name} - ${product.quantity}`;
+                    li.dataset.index = index;
                     productList.appendChild(li);
                 });
             } else {
@@ -201,8 +223,63 @@
                 reader.readAsDataURL(file);
             });
         }
+
+        document.getElementById('editButton').addEventListener('click', function() {
+            const productList = document.getElementById('productList');
+            const items = productList.getElementsByTagName('li');
+
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const index = item.dataset.index;
+                const product = currentProducts[index];
+
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.value = product.name;
+                nameInput.className = 'edit-input';
+
+                const quantityInput = document.createElement('input');
+                quantityInput.type = 'text';
+                quantityInput.value = product.quantity;
+                quantityInput.className = 'edit-input';
+
+                const saveButton = document.createElement('button');
+                saveButton.textContent = 'Save';
+                saveButton.addEventListener('click', function() {
+                    product.name = nameInput.value;
+                    product.quantity = quantityInput.value;
+                    item.textContent = `${product.name} - ${product.quantity}`;
+                });
+
+                item.textContent = '';
+                item.appendChild(nameInput);
+                item.appendChild(quantityInput);
+                item.appendChild(saveButton);
+            }
+        });
+
+        document.getElementById('addButton').addEventListener('click', function() {
+            let storedItems = JSON.parse(localStorage.getItem('storedItems')) || [];
+            storedItems = storedItems.concat(currentProducts);
+            localStorage.setItem('storedItems', JSON.stringify(storedItems));
+            displayStoredItems();
+        });
+
+        function displayStoredItems() {
+            const storedList = document.getElementById('storedList');
+            storedList.innerHTML = '';
+            const storedItems = JSON.parse(localStorage.getItem('storedItems')) || [];
+            storedItems.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.name} - ${item.quantity}`;
+                storedList.appendChild(li);
+            });
+        }
+
+        // Initial display of stored items
+        displayStoredItems();
     </script>
 
-<script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
 </body>
 </html>
