@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt to list | SmartFoods Labs</title>
+    <title>Fresh Produce Analyzer | SmartFoods Labs</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Project FOOD">
@@ -21,11 +21,11 @@
     <link href="https://pixelverse.tech/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
     
     <style>
-        #productList {
+        #produceList {
             list-style-type: none;
             padding: 0;
         }
-        #productList li {
+        #produceList li {
             background-color: #f0f0f0;
             margin: 5px 0;
             padding: 10px;
@@ -43,26 +43,22 @@
         </div>
     </a>
 
-
     <div class="content">
         <div class="h1-container">
-            
-            
-            <h2>Receipt to List</h2>
-            <p>Take a picture of your receipt and use AI to magically extract all your items you purchased into a neat list!</p>
+            <h2>Fresh Produce Analyzer</h2>
+            <p>Take a picture of your fresh produce and use AI to identify items, estimate shelf life, and count quantities!</p>
         </div>
         <form id="uploadForm">
             <input class="img-upload" type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
             <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
-                Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>
+                Analyze <i class="fa-solid fa-leaf icon-def-left"></i>
             </button>
             <img id="uploadedImage" style="margin-top: 10px; width: 250px; display: none;" alt="Uploaded Image">
         </form>
         <div id="result" class="output-text-container">
-            <ul id="productList"></ul>
+            <ul id="produceList"></ul>
         </div>
     </div>
-
 
     <script type="importmap">
         {
@@ -105,14 +101,14 @@
             const file = imageInput.files[0];
 
             try {
-                document.getElementById("generateButton").innerHTML = 'Generating <i class="fa-solid fa-atom fa-spin fa-xl icon-def-left"></i>';
+                document.getElementById("generateButton").innerHTML = 'Analyzing <i class="fa-solid fa-atom fa-spin fa-xl icon-def-left"></i>';
                 const resultText = await processImageAndText(file);
                 displayResult(resultText);
-                document.getElementById("generateButton").innerHTML = 'Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+                document.getElementById("generateButton").innerHTML = 'Analyze <i class="fa-solid fa-leaf icon-def-left"></i>';
             } catch (error) {
                 console.error('Error processing the request:', error);
                 document.getElementById('result').innerText = 'Error: ' + error.message;
-                document.getElementById("generateButton").innerHTML = 'Error - try again! <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+                document.getElementById("generateButton").innerHTML = 'Error - try again! <i class="fa-solid fa-leaf icon-def-left"></i>';
             }
         });
 
@@ -145,14 +141,14 @@
                     responseSchema: {
                         type: "object",
                         properties: {
-                            isReceipt: { type: "boolean" },
-                            products: {
+                            produce: {
                                 type: "array",
                                 items: {
                                     type: "object",
                                     properties: {
                                         name: { type: "string" },
-                                        quantity: { type: "string" }
+                                        shelfLife: { type: "number" },
+                                        quantity: { type: "number" }
                                     }
                                 }
                             }
@@ -162,29 +158,28 @@
             });
             
             const imagePart = await fileToGenerativePart(file);
-            const content = ['Analyze this image. If it is a receipt, set isReceipt to true and list all the products you see in the products array. The product names in the receipt may be shortened or abbreviated. Make sure that your final output does not contain abbreviations or shortened words. Each product should have a name (full name, not abbreviated) and quantity as listed in the receipt (e.g., "120g" or "2 pcs") WHICH DOES NOT MEAN EXACTLY AS THE RECEIPT, Never use GRAM, MILIMETERS etc. ALWAYS use g and ml instead. Perkg means per kilograms. If it is not a receipt, set isReceipt to false and leave the products array empty. Return the result in the specified JSON format.', imagePart];
+            const content = ['Analyze this image of fresh produce. Identify each type of produce, estimate how many days it will take to go bad (shelf life), and count the quantity. Return the result in the specified JSON format with an array of produce items. Each item should have a name, shelfLife (in days), and quantity. If you cannot identify any produce, return an empty array.', imagePart];
             
             const result = await model.generateContent(content);
             const response = await result.response;
             return response.text();
-            console.log(resultText)
         }
 
         function displayResult(resultText) {
             const resultObj = JSON.parse(resultText);
-            const productList = document.getElementById('productList');
-            productList.innerHTML = ''; // Clear previous results
+            const produceList = document.getElementById('produceList');
+            produceList.innerHTML = ''; // Clear previous results
 
-            if (resultObj.isReceipt) {
-                resultObj.products.forEach(product => {
+            if (resultObj.produce && resultObj.produce.length > 0) {
+                resultObj.produce.forEach(item => {
                     const li = document.createElement('li');
-                    li.textContent = `${product.name} - ${product.quantity}`;
-                    productList.appendChild(li);
+                    li.textContent = `${item.name} - Quantity: ${item.quantity}, Estimated shelf life: ${item.shelfLife} days`;
+                    produceList.appendChild(li);
                 });
             } else {
                 const li = document.createElement('li');
-                li.textContent = 'The uploaded image is not a receipt.';
-                productList.appendChild(li);
+                li.textContent = 'No fresh produce identified in the image.';
+                produceList.appendChild(li);
             }
         }
 
@@ -203,6 +198,6 @@
         }
     </script>
 
-<script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
 </body>
 </html>
