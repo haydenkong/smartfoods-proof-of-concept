@@ -19,136 +19,136 @@
     <!-- Favicons -->
     <link href="https://pixelverse.tech/assets/img/favicon.png" rel="icon">
     <link href="https://pixelverse.tech/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+    
+    <style>
+        #productList {
+            list-style-type: none;
+            padding: 0;
+        }
+        #productList li {
+            background-color: #f0f0f0;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .tile {
+            display: flex;
+            align-items: center;
+            /* border: 1px solid #585959; */
+            border-radius: 10px;
+            margin-left: 15%;
+            margin-right: 15%;
+            transition: 0.2s;
+            margin-bottom: 20px;
+            background-color: #ffffff;
+            border: 1px rgb(204, 204, 204) solid;
+        }
+
+        .tile:hover {
+            box-shadow: 0 0 10px rgba(152, 152, 152, 0.5);
+            cursor: pointer;
+        }
+        
+
+        .iconimage {
+            padding: 15px;
+            margin: 0;
+            /* Adjusted to remove the space */
+            border-radius: 5px;
+            background-color: rgb(61, 61, 61);
+            margin-left: 20px;
+            width: 25px;
+        }
+
+        .information {
+            flex-grow: 1;
+            /* Fill remaining space */
+            padding: 15px;
+            /* Adjust padding as needed */
+        }
+
+
+        .information h3 {
+            margin-top: 0px;
+            margin-bottom: 0px;
+        }
+
+        .information p {
+            margin-top: 0px;
+            margin-bottom: 0px;
+        }
+    </style>
 </head>
 <body>
 
-    <div class="content">
-        <div class="h1-container">
-            <h1 class="title">SmartFoods - Proof of Concept</h1>
-            <h2>Reciept to list</h2>
-            <p>Take a picture of your reciept and use AI to magically extract all your items you purchsed into a neat list!</p>
+    <a href="index.html" style="text-decoration: none;">
+        <div class="header">
+            <img class="logo-img" src="sm-logo.png" alt="">
+            <h1 class="title">SmartFoods </h1>
+            <h1 class="title" style="font-family: Aquire; margin-left: 5px; padding-bottom: 2px;"> Labs</h1>
         </div>
-        <form id="uploadForm">
-            <input class="img-upload" type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
-            <!-- <input class="default-input" style="margin-top: 10px;" type="text" id="textInput" placeholder="Enter a prompt" required> -->
-            <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
-                Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>
-            </button>
-            <img id="uploadedImage" style="margin-top: 10px; width: 250px; display: none;" alt="Uploaded Image">
-        </form>
-        <div id="result" class="output-text-container"></div>
+    </a>
+    
+
+
+    <div class="content" style="align-items: center; margin-top: 9%;">
+        <h1 style="margin-bottom: 0px; color: black; text-align: center;">Welcome to SmartFoods Labs</h1>
+        <p style="margin-top: 0px; color: rgb(92, 92, 92); text-align: center;">A place where we show and experiment with proof of concepts for parts of the SmartFoods App.</p>
+        <div class="tile" onclick="gopage('receiptlist.html')">
+            <div class="iconimage" style="background-color: #e91f6224;">
+                <i class="fa-solid fa-receipt fa-lg icon-1" style="color: #e91f64; margin-left: 2px;"></i>
+            </div>
+            <div class="information">
+                <h3>Receipt List</h3>
+                <p class="textsecondary">Convert your receipts into neat lists. Works with Woolworths, Coles, Foodland and other major retailer receipts.
+                </p>
+            </div>
+        </div>
+    
+        <div class="tile" onclick="notavaliableyet()">
+            <div class="iconimage" style="background-color: #e859022e;">
+                <i class="fa-solid fa-leaf fa-lg icon-1" style="color: #e8590e;"></i>
+            </div>
+            <div class="information">
+                <h3>Fresh produce to List</h3>
+                <p class="textsecondary">Snap a photo of your fresh produce and let AI do all the working and return a neat list with suggested quantities.
+                </p>
+            </div>
+        </div>
+    
+        <div class="tile" onclick="notavaliableyet()">
+            <div class="iconimage" style="background-color: #9d3ce221;">
+                <i class="fa-solid fa-globe fa-lg icon-1" style="color: #9d3ce1;"></i>
+            </div>
+            <div class="information">
+                <h3>RecipieGPT</h3>
+                <p class="textsecondary">AI automatically browses the web for trusted and highly-rated recipie sources based on the ingredients provided in a list.
+                </p>
+            </div>
+        </div>
+
+        <p class="small-text">&copy; 2024 Hayden Kong & SmartFoods. All rights reserved.</p>
+
     </div>
 
+    
 
-    <script type="importmap">
-        {
-          "imports": {
-            "@google/generative-ai": "https://esm.run/@google/generative-ai"
-          }
+
+    
+
+
+    <script>
+        function gopage(pagehere) {
+            window.location.href = pagehere;
+        }
+
+        function notavaliableyet() {
+            alert("We are still developing this tool! Stay tuned.");
         }
     </script>
 
-    <script type="module">
-        import { HarmCategory, HarmBlockThreshold, GoogleGenerativeAI } from "@google/generative-ai";
 
-        document.getElementById('imageInput').addEventListener('change', function(event) {
-            const imageInput = document.getElementById('imageInput');
-            const uploadedImage = document.getElementById('uploadedImage');
-
-            if (imageInput.files.length > 0) {
-                const file = imageInput.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    uploadedImage.src = e.target.result;
-                    uploadedImage.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            } else {
-                uploadedImage.style.display = 'none';
-            }
-        });
-
-        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            
-            const imageInput = document.getElementById('imageInput');
-            const textInput = document.getElementById('textInput');
-            
-            // if (imageInput.files.length === 0 || textInput.value.trim() === '') {
-            if (imageInput.files.length === 0) {
-                alert('Please provide both an image and a prompt.');
-                return;
-            }
-            
-            const file = imageInput.files[0];
-            // const prompt = textInput.value.trim();
-
-            try {
-                document.getElementById("generateButton").innerHTML = 'Generating <i class="fa-solid fa-atom fa-spin fa-xl icon-def-left"></i>';
-                const resultText = await processImageAndText(file, prompt);
-                document.getElementById('result').innerText = resultText;
-                document.getElementById("generateButton").innerHTML = 'Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
-            } catch (error) {
-                console.error('Error processing the request:', error);
-                document.getElementById('result').innerText = 'Error: ' + error.message;
-                document.getElementById("generateButton").innerHTML = 'Error - try again! <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
-            }
-        });
-
-
-
-        async function processImageAndText(file, prompt) {
-            const genAI = new GoogleGenerativeAI("");
-            const safetySettings = [
-                {
-                    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                // Add additional categories as needed
-            ];
-
-            const model = genAI.getGenerativeModel({
-                model: "gemini-1.5-flash",
-                safetySettings,
-                generationConfig: { responseMimeType: "application/json" },
-            });
-            // const model = genAi.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
-            
-            const imagePart = await fileToGenerativePart(file);
-            // const content = [prompt, imagePart];
-            const content = ['List out all the products you see in this reciept. If it is not a reciept, return in JSON: NOT A RECIEPT. The products listed in the reciept may be shortened or abbreviated. It is your job to list the full name, not shortened or abbreviated', imagePart];
-            
-            const result = await model.generateContent(content);
-            const response = await result.response;
-            return response.text();
-        }
-
-        async function fileToGenerativePart(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    const base64Data = reader.result.split(',')[1];
-                    resolve({
-                        inlineData: { data: base64Data, mimeType: file.type }
-                    });
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
-    </script>
 
 <script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
 </body>

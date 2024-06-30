@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFoods Proof of Concept</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Project FOOD">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/style.css">
+
+    <!-- Google Fonts - Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+ 
+    <!-- Favicons -->
+    <link href="https://pixelverse.tech/assets/img/favicon.png" rel="icon">
+    <link href="https://pixelverse.tech/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+    
+    <style>
+        #productList {
+            list-style-type: none;
+            padding: 0;
+        }
+        #productList li {
+            background-color: #f0f0f0;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" style="text-decoration: none;">
+        <div class="header">
+            <img class="logo-img" src="sm-logo.png" alt="">
+            <h1 class="title">SmartFoods </h1>
+            <h1 class="title" style="font-family: Aquire; margin-left: 5px; padding-bottom: 2px;"> Labs</h1>
+        </div>
+    </a>
+
+
+    <div class="content">
+        <div class="h1-container">
+            
+            
+            <h2>Receipt to List</h2>
+            <p>Take a picture of your receipt and use AI to magically extract all your items you purchased into a neat list!</p>
+        </div>
+        <form id="uploadForm">
+            <input class="img-upload" type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
+            <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
+                Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>
+            </button>
+            <img id="uploadedImage" style="margin-top: 10px; width: 250px; display: none;" alt="Uploaded Image">
+        </form>
+        <div id="result" class="output-text-container">
+            <ul id="productList"></ul>
+        </div>
+    </div>
+
+
+    <script type="importmap">
+        {
+          "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+          }
+        }
+    </script>
+
+    <script type="module">
+        import { HarmCategory, HarmBlockThreshold, GoogleGenerativeAI } from "@google/generative-ai";
+
+        document.getElementById('imageInput').addEventListener('change', function(event) {
+            const imageInput = document.getElementById('imageInput');
+            const uploadedImage = document.getElementById('uploadedImage');
+
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImage.src = e.target.result;
+                    uploadedImage.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                uploadedImage.style.display = 'none';
+            }
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const imageInput = document.getElementById('imageInput');
+            
+            if (imageInput.files.length === 0) {
+                alert('Please provide an image.');
+                return;
+            }
+            
+            const file = imageInput.files[0];
+
+            try {
+                document.getElementById("generateButton").innerHTML = 'Generating <i class="fa-solid fa-atom fa-spin fa-xl icon-def-left"></i>';
+                const resultText = await processImageAndText(file);
+                displayResult(resultText);
+                document.getElementById("generateButton").innerHTML = 'Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+            } catch (error) {
+                console.error('Error processing the request:', error);
+                document.getElementById('result').innerText = 'Error: ' + error.message;
+                document.getElementById("generateButton").innerHTML = 'Error - try again! <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+            }
+        });
+
+        async function processImageAndText(file) {
+            const genAI = new GoogleGenerativeAI("AIzaSyDQEKkgO2U0AAa-2zqO0hvudtG-MI8Nd7s");
+            const safetySettings = [
+                {
+                    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+            ];
+
+            const model = genAI.getGenerativeModel({
+                model: "gemini-1.5-flash",
+                safetySettings,
+                generationConfig: { 
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "object",
+                        properties: {
+                            isReceipt: { type: "boolean" },
+                            products: {
+                                type: "array",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        name: { type: "string" },
+                                        quantity: { type: "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+            });
+            
+            const imagePart = await fileToGenerativePart(file);
+            const content = ['Analyze this image. If it is a receipt, set isReceipt to true and list all the products you see in the products array. Each product should have a name (full name, not abbreviated) and quantity as listed in the receipt (e.g., "120g" or "2 pcs"). If it is not a receipt, set isReceipt to false and leave the products array empty. Return the result in the specified JSON format.', imagePart];
+            
+            const result = await model.generateContent(content);
+            const response = await result.response;
+            return response.text();
+        }
+
+        function displayResult(resultText) {
+            const resultObj = JSON.parse(resultText);
+            const productList = document.getElementById('productList');
+            productList.innerHTML = ''; // Clear previous results
+
+            if (resultObj.isReceipt) {
+                resultObj.products.forEach(product => {
+                    const li = document.createElement('li');
+                    li.textContent = `${product.name} - ${product.quantity}`;
+                    productList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'The uploaded image is not a receipt.';
+                productList.appendChild(li);
+            }
+        }
+
+        async function fileToGenerativePart(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64Data = reader.result.split(',')[1];
+                    resolve({
+                        inlineData: { data: base64Data, mimeType: file.type }
+                    });
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+    </script>
+
+<script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
+</body>
+</html>
