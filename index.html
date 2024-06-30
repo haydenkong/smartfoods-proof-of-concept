@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFoods Proof of Concept</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Project FOOD">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/app/style.css">
+
+    <!-- Google Fonts - Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+ 
+    <!-- Favicons -->
+    <link href="https://pixelverse.tech/assets/img/favicon.png" rel="icon">
+    <link href="https://pixelverse.tech/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+</head>
+<body>
+
+    <div class="content">
+        <div class="h1-container">
+            <h1 class="title">SmartFoods Proof of Concept</h1>
+        </div>
+        <form id="uploadForm">
+            <input type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
+            <input class="default-input" style="margin-top: 10px;" type="text" id="textInput" placeholder="Enter a prompt" required>
+            <img id="uploadedImage" style="margin-top: 10px;" alt="Uploaded Image">
+            <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
+                Vision! <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>
+            </button>
+        </form>
+        <div id="result" class="output-text-container"></div>
+    </div>
+
+
+    <script type="importmap">
+        {
+          "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+          }
+        }
+    </script>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+
+        document.getElementById('imageInput').addEventListener('change', function(event) {
+            const imageInput = document.getElementById('imageInput');
+            const uploadedImage = document.getElementById('uploadedImage');
+
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImage.src = e.target.result;
+                    uploadedImage.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                uploadedImage.style.display = 'none';
+            }
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const imageInput = document.getElementById('imageInput');
+            const textInput = document.getElementById('textInput');
+            
+            if (imageInput.files.length === 0 || textInput.value.trim() === '') {
+                alert('Please provide both an image and a prompt.');
+                return;
+            }
+            
+            const file = imageInput.files[0];
+            const prompt = textInput.value.trim();
+
+            try {
+                document.getElementById("generateButton").innerHTML = 'Generating <i class="fa-solid fa-atom fa-spin fa-xl icon-def-left"></i>';
+                const resultText = await processImageAndText(file, prompt);
+                document.getElementById('result').innerText = resultText;
+                document.getElementById("generateButton").innerHTML = 'Vision! <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+            } catch (error) {
+                console.error('Error processing the request:', error);
+                document.getElementById('result').innerText = 'Error: ' + error.message;
+                document.getElementById("generateButton").innerHTML = 'Error - try again! <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+            }
+        });
+
+        async function processImageAndText(file, prompt) {
+            const genAI = new GoogleGenerativeAI("");
+            const model = genAI.getGenerativeModel({ model: 'gemini-pro-vision' });
+            
+            const imagePart = await fileToGenerativePart(file);
+            const content = [prompt, imagePart];
+            
+            const result = await model.generateContent(content);
+            const response = await result.response;
+            return response.text();
+        }
+
+        async function fileToGenerativePart(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64Data = reader.result.split(',')[1];
+                    resolve({
+                        inlineData: { data: base64Data, mimeType: file.type }
+                    });
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+    </script>
+
+<script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
+</body>
+</html>
