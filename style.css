@@ -1,0 +1,54 @@
+/* style.css */
+
+/* General Styles */
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 15px;
+    padding: 0;
+    background: #f4f4f9;
+}
+
+h1{
+    color: #007bff;
+}
+
+
+.default-input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.b-primary {
+    background: #007bff;
+    color: #fff;
+    border: none;
+    padding: 15px 25px;
+    font-size: 1.0rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.b-primary:hover {
+    background: #0056b3;
+}
+
+.b-primary:active {
+    background: #004f9b;
+    transform: scale(0.96);
+}
+
+.img-upload {
+    background: #c1f0ed;
+    color: #000000;
+    border: none;
+    padding: 15px;
+    font-size: 1.0rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}

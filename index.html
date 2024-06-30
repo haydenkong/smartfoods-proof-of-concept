@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-title" content="Project FOOD">
     
     <!-- Styles -->
-    <link rel="stylesheet" href="/app/style.css">
+    <link rel="stylesheet" href="/style.css">
 
     <!-- Google Fonts - Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,15 +24,17 @@
 
     <div class="content">
         <div class="h1-container">
-            <h1 class="title">SmartFoods Proof of Concept</h1>
+            <h1 class="title">SmartFoods - Proof of Concept</h1>
+            <h2>Reciept to list</h2>
+            <p>Take a picture of your reciept and use AI to magically extract all your items you purchsed into a neat list!</p>
         </div>
         <form id="uploadForm">
-            <input type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
-            <input class="default-input" style="margin-top: 10px;" type="text" id="textInput" placeholder="Enter a prompt" required>
-            <img id="uploadedImage" style="margin-top: 10px;" alt="Uploaded Image">
+            <input class="img-upload" type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
+            <!-- <input class="default-input" style="margin-top: 10px;" type="text" id="textInput" placeholder="Enter a prompt" required> -->
             <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
-                Vision! <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>
+                Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>
             </button>
+            <img id="uploadedImage" style="margin-top: 10px; width: 250px; display: none;" alt="Uploaded Image">
         </form>
         <div id="result" class="output-text-container"></div>
     </div>
@@ -47,7 +49,7 @@
     </script>
 
     <script type="module">
-        import { GoogleGenerativeAI } from "@google/generative-ai";
+        import { HarmCategory, HarmBlockThreshold, GoogleGenerativeAI } from "@google/generative-ai";
 
         document.getElementById('imageInput').addEventListener('change', function(event) {
             const imageInput = document.getElementById('imageInput');
@@ -72,19 +74,20 @@
             const imageInput = document.getElementById('imageInput');
             const textInput = document.getElementById('textInput');
             
-            if (imageInput.files.length === 0 || textInput.value.trim() === '') {
+            // if (imageInput.files.length === 0 || textInput.value.trim() === '') {
+            if (imageInput.files.length === 0) {
                 alert('Please provide both an image and a prompt.');
                 return;
             }
             
             const file = imageInput.files[0];
-            const prompt = textInput.value.trim();
+            // const prompt = textInput.value.trim();
 
             try {
                 document.getElementById("generateButton").innerHTML = 'Generating <i class="fa-solid fa-atom fa-spin fa-xl icon-def-left"></i>';
                 const resultText = await processImageAndText(file, prompt);
                 document.getElementById('result').innerText = resultText;
-                document.getElementById("generateButton").innerHTML = 'Vision! <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+                document.getElementById("generateButton").innerHTML = 'Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
             } catch (error) {
                 console.error('Error processing the request:', error);
                 document.getElementById('result').innerText = 'Error: ' + error.message;
@@ -92,12 +95,40 @@
             }
         });
 
+
+
         async function processImageAndText(file, prompt) {
             const genAI = new GoogleGenerativeAI("");
-            const model = genAI.getGenerativeModel({ model: 'gemini-pro-vision' });
+            const safetySettings = [
+                {
+                    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                // Add additional categories as needed
+            ];
+
+            const model = genAI.getGenerativeModel({
+                model: "gemini-1.5-flash",
+                safetySettings,
+                generationConfig: { responseMimeType: "application/json" },
+            });
+            // const model = genAi.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
             
             const imagePart = await fileToGenerativePart(file);
-            const content = [prompt, imagePart];
+            // const content = [prompt, imagePart];
+            const content = ['List out all the products you see in this reciept. If it is not a reciept, return in JSON: NOT A RECIEPT. The products listed in the reciept may be shortened or abbreviated. It is your job to list the full name, not shortened or abbreviated', imagePart];
             
             const result = await model.generateContent(content);
             const response = await result.response;
