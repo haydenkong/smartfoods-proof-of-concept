@@ -343,7 +343,7 @@
             storedItems = storedItems.concat(currentProducts);
             localStorage.setItem('storedItems', JSON.stringify(storedItems));
             displayStoredItems();
-            this.innerHTML = '<i class="fa-solid fa-tick" style="margin-right: 5px;"></i>Added succesfully';
+            this.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 5px;"></i>Added succesfully';
         });
 
         function displayStoredItems() {
@@ -374,6 +374,7 @@
         displayStoredItems();
     </script>
 
+    <p class="small-text">&copy; 2024 Hayden Kong & SmartFoods. All rights reserved.</p>
     <script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
 </body>
 </html>

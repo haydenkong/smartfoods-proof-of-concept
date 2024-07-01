@@ -21,20 +21,66 @@
     <link href="https://pixelverse.tech/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
     
     <style>
-        #produceList {
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .panel {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        #produceList, #storedList {
             list-style-type: none;
             padding: 0;
         }
-        #produceList li {
-            background-color: #f0f0f0;
-            margin: 5px 0;
-            padding: 10px;
+        #produceList li, #storedList li {
+            background-color: #f9f9f9;
+            margin: 10px 0;
+            padding: 15px;
             border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .edit-input {
+            width: calc(33% - 10px);
+            padding: 5px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .delete-icon, .edit-icon {
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .delete-icon {
+            color: #ff0000;
+        }
+        .edit-icon {
+            color: #007bff;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            .panel {
+                width: calc(50% - 10px);
+            }
         }
     </style>
 </head>
 <body>
-
     <a href="index.html" style="text-decoration: none;">
         <div class="header">
             <img class="logo-img" src="sm-logo.png" alt="">
@@ -43,20 +89,26 @@
         </div>
     </a>
 
-    <div class="content">
-        <div class="h1-container">
+    <div class="container">
+        <div class="panel" style="margin-right: 2px;">
             <h2>Fresh Produce Analyzer</h2>
             <p>Take a picture of your fresh produce and use AI to identify items, estimate shelf life, and count quantities!</p>
+            <form id="uploadForm">
+                <input class="img-upload" type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
+                <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
+                    Analyze <i class="fa-solid fa-leaf icon-def-left"></i>
+                </button>
+                <img id="uploadedImage" style="margin-top: 10px; width: 250px; display: none;" alt="Uploaded Image">
+            </form>
+            <div id="result">
+                <ul id="produceList"></ul>
+            </div>
+            <button id="editButton" style="display:none;" class="b-secondary"><i class="fa-solid fa-pen" style="margin-right: 5px;"></i>Edit</button>
+            <button id="addButton" style="display:none;" class="b-primary"><i class="fa-solid fa-plus" style="margin-right: 5px;"></i>Add to List</button>
         </div>
-        <form id="uploadForm">
-            <input class="img-upload" type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
-            <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
-                Analyze <i class="fa-solid fa-leaf icon-def-left"></i>
-            </button>
-            <img id="uploadedImage" style="margin-top: 10px; width: 250px; display: none;" alt="Uploaded Image">
-        </form>
-        <div id="result" class="output-text-container">
-            <ul id="produceList"></ul>
+        <div class="panel" style="margin-left: 2px;">
+            <h2>Stored Produce</h2>
+            <ul id="storedList"></ul>
         </div>
     </div>
 
@@ -70,6 +122,8 @@
 
     <script type="module">
         import { HarmCategory, HarmBlockThreshold, GoogleGenerativeAI } from "@google/generative-ai";
+
+        let currentProduce = [];
 
         document.getElementById('imageInput').addEventListener('change', function(event) {
             const imageInput = document.getElementById('imageInput');
@@ -105,6 +159,8 @@
                 const resultText = await processImageAndText(file);
                 displayResult(resultText);
                 document.getElementById("generateButton").innerHTML = 'Analyze <i class="fa-solid fa-leaf icon-def-left"></i>';
+                document.getElementById("editButton").style.display = 'inline-block';
+                document.getElementById("addButton").style.display = 'inline-block';
             } catch (error) {
                 console.error('Error processing the request:', error);
                 document.getElementById('result').innerText = 'Error: ' + error.message;
@@ -171,16 +227,75 @@
             produceList.innerHTML = ''; // Clear previous results
 
             if (resultObj.produce && resultObj.produce.length > 0) {
-                resultObj.produce.forEach(item => {
+                currentProduce = resultObj.produce;
+                resultObj.produce.forEach((item, index) => {
                     const li = document.createElement('li');
-                    li.textContent = `${item.name} - Quantity: ${item.quantity}, Estimated shelf life: ${item.shelfLife} days`;
+                    li.innerHTML = `
+                        <span>${item.name} - Quantity: ${item.quantity}, Estimated shelf life: ${item.shelfLife} days</span>
+                        <div>
+                            <i class="fas fa-edit edit-icon" data-index="${index}"></i>
+                            <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
+                        </div>
+                    `;
+                    li.dataset.index = index;
                     produceList.appendChild(li);
+                });
+
+                // Add event listeners for edit and delete icons
+                document.querySelectorAll('#produceList .edit-icon').forEach(icon => {
+                    icon.addEventListener('click', function() {
+                        const index = parseInt(this.dataset.index);
+                        editItem(index);
+                    });
+                });
+                document.querySelectorAll('#produceList .delete-icon').forEach(icon => {
+                    icon.addEventListener('click', function() {
+                        const index = parseInt(this.dataset.index);
+                        currentProduce.splice(index, 1);
+                        displayResult(JSON.stringify({ produce: currentProduce }));
+                    });
                 });
             } else {
                 const li = document.createElement('li');
                 li.textContent = 'No fresh produce identified in the image.';
                 produceList.appendChild(li);
             }
+        }
+
+        function editItem(index) {
+            const item = document.querySelector(`#produceList li[data-index="${index}"]`);
+            const produce = currentProduce[index];
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.value = produce.name;
+            nameInput.className = 'edit-input';
+
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'number';
+            quantityInput.value = produce.quantity;
+            quantityInput.className = 'edit-input';
+
+            const shelfLifeInput = document.createElement('input');
+            shelfLifeInput.type = 'number';
+            shelfLifeInput.value = produce.shelfLife;
+            shelfLifeInput.className = 'edit-input';
+
+            const saveButton = document.createElement('button');
+            saveButton.textContent = 'Save';
+            saveButton.className = 'b-primary';
+            saveButton.addEventListener('click', function() {
+                produce.name = nameInput.value;
+                produce.quantity = parseInt(quantityInput.value);
+                produce.shelfLife = parseInt(shelfLifeInput.value);
+                displayResult(JSON.stringify({ produce: currentProduce }));
+            });
+
+            item.innerHTML = '';
+            item.appendChild(nameInput);
+            item.appendChild(quantityInput);
+            item.appendChild(shelfLifeInput);
+            item.appendChild(saveButton);
         }
 
         async function fileToGenerativePart(file) {
@@ -196,8 +311,56 @@
                 reader.readAsDataURL(file);
             });
         }
+
+        document.getElementById('editButton').addEventListener('click', function() {
+            const produceList = document.getElementById('produceList');
+            const items = produceList.getElementsByTagName('li');
+
+            for (let i = 0; i < items.length; i++) {
+                editItem(i);
+            }
+        });
+
+        document.getElementById('addButton').addEventListener('click', function() {
+            let storedItems = JSON.parse(localStorage.getItem('storedProduce')) || [];
+            storedItems = storedItems.concat(currentProduce);
+            localStorage.setItem('storedProduce', JSON.stringify(storedItems));
+            displayStoredItems();
+            this.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 5px;"></i>Added successfully';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fa-solid fa-plus" style="margin-right: 5px;"></i>Add to List';
+            }, 2000);
+        });
+
+        function displayStoredItems() {
+            const storedList = document.getElementById('storedList');
+            storedList.innerHTML = '';
+            const storedItems = JSON.parse(localStorage.getItem('storedProduce')) || [];
+            storedItems.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${item.name} - Quantity: ${item.quantity}, Estimated shelf life: ${item.shelfLife} days</span>
+                    <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
+                `;
+                storedList.appendChild(li);
+            });
+
+            // Add event listeners for delete icons in stored items
+            document.querySelectorAll('#storedList .delete-icon').forEach(icon => {
+                icon.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    storedItems.splice(index, 1);
+                    localStorage.setItem('storedProduce', JSON.stringify(storedItems));
+                    displayStoredItems();
+                });
+            });
+        }
+
+        // Initial display of stored items
+        displayStoredItems();
     </script>
 
+    <p class="small-text">&copy; 2024 Hayden Kong & SmartFoods. All rights reserved.</p>    
     <script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
 </body>
 </html>
