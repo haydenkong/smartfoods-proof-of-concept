@@ -21,31 +21,90 @@
     <link href="https://pixelverse.tech/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
     
     <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+
+            background-color: #f4f4f4;
+        }
         .container {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
         }
-        .left-panel, .right-panel {
-            width: 48%;
+        .panel {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        /* .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+            margin-bottom: 20px;
+        } */
+        /* .title {
+            font-size: 24px;
+            margin: 0;
+        } */
+        h2 {
+            color: #333;
+            margin-top: 0;
         }
         #productList, #storedList {
             list-style-type: none;
             padding: 0;
         }
         #productList li, #storedList li {
-            background-color: #f0f0f0;
-            margin: 5px 0;
-            padding: 10px;
+            background-color: #f9f9f9;
+            margin: 10px 0;
+            padding: 15px;
             border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
         .edit-input {
-            width: 70%;
-            margin-right: 5px;
+            width: calc(50% - 10px);
+            padding: 5px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .delete-icon, .edit-icon {
+            cursor: pointer;
+            color: #ff0000;
+            margin-left: 10px;
+        }
+        .edit-icon {
+            color: #007bff;
+        }
+        .img-upload {
+            margin-bottom: 10px;
+        }
+        #uploadedImage {
+            max-width: 100%;
+            height: auto;
+            margin-top: 10px;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            .panel {
+                width: calc(50% - 10px);
+            }
         }
     </style>
 </head>
 <body>
-
     <a href="index.html" style="text-decoration: none;">
         <div class="header">
             <img class="logo-img" src="sm-logo.png" alt="">
@@ -55,27 +114,23 @@
     </a>
 
     <div class="container">
-        <div class="left-panel">
-            <div class="content">
-                <div class="h1-container">
-                    <h2>Receipt to List</h2>
-                    <p>Take a picture of your receipt and use AI to magically extract all your items you purchased into a neat list!</p>
-                </div>
-                <form id="uploadForm">
-                    <input class="img-upload" type="file" style="margin-top: 10px;" id="imageInput" accept="image/*" required>
-                    <button type="submit" style="margin-top: 10px;" id="generateButton" class="b-primary">
-                        Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>
-                    </button>
-                    <img id="uploadedImage" style="margin-top: 10px; width: 250px; display: none;" alt="Uploaded Image">
-                </form>
-                <div id="result" class="output-text-container">
-                    <ul id="productList"></ul>
-                </div>
-                <button id="editButton" style="display:none;" class="b-secondary"><i class="fa-solid fa-pen" style="margin-right: 5px;"></i>Edit</button>
-                <button id="addButton" style="display:none;" class="b-primary"><i class="fa-solid fa-plus" style="margin-right: 5px;"></i>Add to List</button>
+        <div class="panel" style="margin-right: 2px;">
+            <h2>Receipt to List</h2>
+            <p>Take a picture of your receipt and use AI to extract your purchased items into a neat list!</p>
+            <form id="uploadForm">
+                <input class="img-upload" type="file" id="imageInput" accept="image/*" required>
+                <button type="submit" id="generateButton" class="b-primary">
+                    Submit <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </button>
+                <img id="uploadedImage" style="display: none;" alt="Uploaded Image">
+            </form>
+            <div id="result">
+                <ul id="productList"></ul>
             </div>
+            <button id="editButton" style="display:none;" class="b-secondary"><i class="fa-solid fa-pen" style="margin-right: 5px;"></i>Edit</button>
+            <button id="addButton" style="display:none;" class="b-primary"><i class="fa-solid fa-plus" style="margin-right: 5px;"></i>Add to List</button>
         </div>
-        <div class="right-panel">
+        <div class="panel" style="margin-left: 2px;">
             <h2>Stored Items</h2>
             <ul id="storedList"></ul>
         </div>
@@ -124,16 +179,16 @@
             const file = imageInput.files[0];
 
             try {
-                document.getElementById("generateButton").innerHTML = 'Generating <i class="fa-solid fa-atom fa-spin fa-xl icon-def-left"></i>';
+                document.getElementById("generateButton").innerHTML = 'Generating <i class="fa-solid fa-atom fa-spin"></i>';
                 const resultText = await processImageAndText(file);
                 displayResult(resultText);
-                document.getElementById("generateButton").innerHTML = 'Submit <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+                document.getElementById("generateButton").innerHTML = 'Submit <i class="fa-solid fa-wand-magic-sparkles"></i>';
                 document.getElementById("editButton").style.display = 'inline-block';
                 document.getElementById("addButton").style.display = 'inline-block';
             } catch (error) {
                 console.error('Error processing the request:', error);
                 document.getElementById('result').innerText = 'Error: ' + error.message;
-                document.getElementById("generateButton").innerHTML = 'Error - try again! <i class="fa-solid fa-wand-magic-sparkles icon-def-left"></i>';
+                document.getElementById("generateButton").innerHTML = 'Error - try again! <i class="fa-solid fa-wand-magic-sparkles"></i>';
             }
         });
 
@@ -159,7 +214,7 @@
             ];
 
             const model = genAI.getGenerativeModel({
-                model: "gemini-1.5-flash",
+                model: "gemini-1.5-pro-latest",
                 safetySettings,
                 generationConfig: { 
                     responseMimeType: "application/json",
@@ -183,7 +238,7 @@
             });
             
             const imagePart = await fileToGenerativePart(file);
-            const content = ['Analyze this image. If it is a receipt, set isReceipt to true and list all the products you see in the products array. The product names in the receipt may be shortened or abbreviated. Make sure that your final output does not contain abbreviations or shortened words. Each product should have a name (full name, not abbreviated) and quantity as listed in the receipt (e.g., "120g" or "2 pcs") WHICH DOES NOT MEAN EXACTLY AS THE RECEIPT, Never use GRAM, MILIMETERS etc. ALWAYS use g and ml instead. Perkg means per kilograms. If it is not a receipt, set isReceipt to false and leave the products array empty. Return the result in the specified JSON format.', imagePart];
+            const content = ['Analyze this image. If it is a receipt, set isReceipt to true and list all the products you see in the products array. The product names in the receipt may be shortened or abbreviated. Make sure that your final output does not contain abbreviations or shortened words. Each product should have a name (full name, not abbreviated) and quantity as listed in the receipt (e.g., "120g" or "2 pcs") WHICH DOES NOT MEAN EXACTLY AS THE RECEIPT, Never use GRAM, MILIMETERS etc. ALWAYS use g and ml instead. Perkg means per kilograms and the price was calculated per kg. Their should be more information right below the Perkg line with how much the weight was. If it is not a receipt, set isReceipt to false and leave the products array empty. Return the result in the specified JSON format.', imagePart];
             
             const result = await model.generateContent(content);
             const response = await result.response;
@@ -199,15 +254,65 @@
                 currentProducts = resultObj.products;
                 resultObj.products.forEach((product, index) => {
                     const li = document.createElement('li');
-                    li.textContent = `${product.name} - ${product.quantity}`;
+                    li.innerHTML = `
+                        <span>${product.name} - ${product.quantity}</span>
+                        <div>
+                            <i class="fas fa-edit edit-icon" data-index="${index}"></i>
+                            <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
+                        </div>
+                    `;
                     li.dataset.index = index;
                     productList.appendChild(li);
+                });
+
+                // Add event listeners for edit and delete icons
+                document.querySelectorAll('#productList .edit-icon').forEach(icon => {
+                    icon.addEventListener('click', function() {
+                        const index = parseInt(this.dataset.index);
+                        editItem(index);
+                    });
+                });
+                document.querySelectorAll('#productList .delete-icon').forEach(icon => {
+                    icon.addEventListener('click', function() {
+                        const index = parseInt(this.dataset.index);
+                        currentProducts.splice(index, 1);
+                        displayResult(JSON.stringify({ isReceipt: true, products: currentProducts }));
+                    });
                 });
             } else {
                 const li = document.createElement('li');
                 li.textContent = 'The uploaded image is not a receipt.';
                 productList.appendChild(li);
             }
+        }
+
+        function editItem(index) {
+            const item = document.querySelector(`#productList li[data-index="${index}"]`);
+            const product = currentProducts[index];
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.value = product.name;
+            nameInput.className = 'edit-input';
+
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'text';
+            quantityInput.value = product.quantity;
+            quantityInput.className = 'edit-input';
+
+            const saveButton = document.createElement('button');
+            saveButton.textContent = 'Save';
+            saveButton.className = 'b-primary';
+            saveButton.addEventListener('click', function() {
+                product.name = nameInput.value;
+                product.quantity = quantityInput.value;
+                displayResult(JSON.stringify({ isReceipt: true, products: currentProducts }));
+            });
+
+            item.innerHTML = '';
+            item.appendChild(nameInput);
+            item.appendChild(quantityInput);
+            item.appendChild(saveButton);
         }
 
         async function fileToGenerativePart(file) {
@@ -229,32 +334,7 @@
             const items = productList.getElementsByTagName('li');
 
             for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                const index = item.dataset.index;
-                const product = currentProducts[index];
-
-                const nameInput = document.createElement('input');
-                nameInput.type = 'text';
-                nameInput.value = product.name;
-                nameInput.className = 'edit-input';
-
-                const quantityInput = document.createElement('input');
-                quantityInput.type = 'text';
-                quantityInput.value = product.quantity;
-                quantityInput.className = 'edit-input';
-
-                const saveButton = document.createElement('button');
-                saveButton.textContent = 'Save';
-                saveButton.addEventListener('click', function() {
-                    product.name = nameInput.value;
-                    product.quantity = quantityInput.value;
-                    item.textContent = `${product.name} - ${product.quantity}`;
-                });
-
-                item.textContent = '';
-                item.appendChild(nameInput);
-                item.appendChild(quantityInput);
-                item.appendChild(saveButton);
+                editItem(i);
             }
         });
 
@@ -263,16 +343,30 @@
             storedItems = storedItems.concat(currentProducts);
             localStorage.setItem('storedItems', JSON.stringify(storedItems));
             displayStoredItems();
+            this.innerHTML = '<i class="fa-solid fa-tick" style="margin-right: 5px;"></i>Added succesfully';
         });
 
         function displayStoredItems() {
             const storedList = document.getElementById('storedList');
             storedList.innerHTML = '';
             const storedItems = JSON.parse(localStorage.getItem('storedItems')) || [];
-            storedItems.forEach(item => {
+            storedItems.forEach((item, index) => {
                 const li = document.createElement('li');
-                li.textContent = `${item.name} - ${item.quantity}`;
+                li.innerHTML = `
+                    <span>${item.name} - ${item.quantity}</span>
+                    <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
+                `;
                 storedList.appendChild(li);
+            });
+
+            // Add event listeners for delete icons in stored items
+            document.querySelectorAll('#storedList .delete-icon').forEach(icon => {
+                icon.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    storedItems.splice(index, 1);
+                    localStorage.setItem('storedItems', JSON.stringify(storedItems));
+                    displayStoredItems();
+                });
             });
         }
 
