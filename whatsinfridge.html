@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipie Finder - SmartFoods Labs</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Project FOOD">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/style.css">
+
+    <!-- Google Fonts - Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+ 
+    <!-- Favicons -->
+    <link href="https://pixelverse.tech/assets/img/favicon.png" rel="icon">
+    <link href="https://pixelverse.tech/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+    <style>
+        #ingredients, #apiKey {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .recipe {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .recipe img {
+            max-width: 100%;
+            height: auto;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" style="text-decoration: none;">
+        <div class="header">
+            <img class="logo-img" src="sm-logo.png" alt="">
+            <h1 class="title">SmartFoods </h1>
+            <h1 class="title" style="font-family: Aquire; margin-left: 5px; padding-bottom: 2px;"> Labs</h1>
+        </div>
+    </a>
+
+    <div class="container">
+        <h1>Recipe Finder</h1>
+        <input type="text" id="apiKey" placeholder="Enter your Spoonacular API key">
+        <input type="text" id="ingredients" placeholder="Enter ingredients (comma-separated)">
+        <button class="b-primary" id="submit">Find Recipes <i class="fa-solid fa-list fa-xl icon-def-left"></i></button>
+        <div id="results"></div>
+    </div>
+    
+
+    <script>
+        const submitBtn = document.getElementById('submit');
+        const apiKeyInput = document.getElementById('apiKey');
+        const ingredientsInput = document.getElementById('ingredients');
+        const resultsDiv = document.getElementById('results');
+
+        submitBtn.addEventListener('click', findRecipes);
+
+        async function findRecipes() {
+            const apiKey = apiKeyInput.value.trim();
+            const ingredients = ingredientsInput.value.trim();
+            
+            if (!apiKey) {
+                alert('Please enter your Spoonacular API key');
+                return;
+            }
+            
+            if (!ingredients) {
+                alert('Please enter ingredients');
+                return;
+            }
+
+            const url = `https://api.spoonacular.com/recipes/findByIngredients?apiKey=${apiKey}&ingredients=${encodeURIComponent(ingredients)}&number=5`;
+
+            try {
+                submit.innerHTML = 'Analyzing <i class="fa-solid fa-atom fa-spin fa-xl icon-def-left"></i>';
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                displayRecipes(data);
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = `An error occurred while fetching recipes: ${error.message}`;
+                submit.innerHTML = 'Find Recipes <i class="fa-solid fa-list fa-xl icon-def-left"></i>';
+            }
+        }
+
+        function displayRecipes(recipes) {
+            if (recipes.length === 0) {
+                resultsDiv.innerHTML = 'No recipes found.';
+                submit.innerHTML = 'Find Recipes <i class="fa-solid fa-list fa-xl icon-def-left"></i>';
+                return;
+            }
+
+            let html = '';
+            recipes.forEach(recipe => {
+                html += `
+                    <div class="recipe">
+                        <h2>${recipe.title}</h2>
+                        <img src="${recipe.image}" alt="${recipe.title}">
+                        <p>Used ingredients: ${recipe.usedIngredientCount}</p>
+                        <p>Missing ingredients: ${recipe.missedIngredientCount}</p>
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = html;
+            submit.innerHTML = 'Find Recipes <i class="fa-solid fa-list fa-xl icon-def-left"></i>';
+        }
+    </script>
+    <script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
+</body>
+</html>
