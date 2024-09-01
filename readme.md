@@ -2,6 +2,10 @@
 
 Welcome to the SmartFoods Labs! This web-app is designed to showcase the posibilites of what AI vision can do and how it can enhance the SmartFoods user experience.
 
+TRY THE BETA: https://smartfoods-labs.vercel.app/
+![image](https://github.com/user-attachments/assets/5f2736c7-5cf2-4c9a-b3b7-42bef9a12ff7)
+
+
 ## Features
 
 - Receipt List: Convert your receipts into neat lists. Works with Woolworths, Coles, Foodland and other major retailer receipts.
