@@ -1,5 +1,10 @@
 /* style.css */
 
+@font-face {
+    font-family: Aquire;
+    src: url('aquire_font.otf');
+}
+
 /* General Styles */
 body {
     font-family: 'Poppins', sans-serif;
