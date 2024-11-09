@@ -154,8 +154,9 @@ h1{
     color: #007bff;
 }
 
-/* if mobile, add bottom padding for nav bar */
-@media screen and (max-height: 600px) {
+
+/* if width is mobile */
+@media (max-width: 600px) {
     .bottom-nav {
         padding-bottom: 15px;
     }
