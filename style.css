@@ -127,7 +127,7 @@ h1{
   }
   
   .nav-item.active {
-    color: var(--primary-color);
+    color: #007bff;
   }
   
   .nav-item i {
