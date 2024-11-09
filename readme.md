@@ -2,7 +2,7 @@
 
 Welcome to the SmartFoods Labs! This web-app is designed to showcase the posibilites of what AI vision can do and how it can enhance the SmartFoods user experience.
 
-TRY THE BETA: https://smartfoods-labs.vercel.app/
+TRY THE BETA: https://labs.smartfoods.haydenkong.dev/
 ![image](https://github.com/user-attachments/assets/5f2736c7-5cf2-4c9a-b3b7-42bef9a12ff7)
 
 
