@@ -42,11 +42,11 @@
     
     <nav class="bottom-nav">
         <div class="nav-items">
-            <a href="index.html" class="nav-item active">
+            <a href="index.html" class="nav-item">
                 <i class="fas fa-home"></i>
                 <span>Home</span>
             </a>
-            <a href="mylocal.html" class="nav-item">
+            <a href="mylocal.html" class="nav-item active">
                 <i class="fas fa-receipt"></i>
                 <span>MyLocal</span>
             </a>
@@ -66,18 +66,6 @@
         <h2>MyLocal</h2>
         <p>Coming soon...</p>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Highlight active nav item
-            const currentPage = window.location.pathname;
-            document.querySelectorAll('.nav-item').forEach(item => {
-                if (item.getAttribute('href') === currentPage.split('/').pop()) {
-                    item.classList.add('active');
-                }
-            });
-        });
-    </script>
 
 
     <p class="small-text">&copy; 2024 Hayden Kong & SmartFoods. All rights reserved.</p>

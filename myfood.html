@@ -42,7 +42,7 @@
     
     <nav class="bottom-nav">
         <div class="nav-items">
-            <a href="index.html" class="nav-item active">
+            <a href="index.html" class="nav-item">
                 <i class="fas fa-home"></i>
                 <span>Home</span>
             </a>
@@ -54,7 +54,7 @@
                 <i class="fas fa-apple-alt"></i>
                 <span>Cookbook</span>
             </a>
-            <a href="myfood.html" class="nav-item">
+            <a href="myfood.html" class="nav-item active">
                 <i class="fas fa-utensils"></i>
                 <span>MyFood</span>
             </a>
@@ -67,19 +67,6 @@
             <a href="smartcamera/options.html"><button class="b-primary">Add <i class="fa-solid fa-plus"></i></button></a>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Highlight active nav item
-            const currentPage = window.location.pathname;
-            document.querySelectorAll('.nav-item').forEach(item => {
-                if (item.getAttribute('href') === currentPage.split('/').pop()) {
-                    item.classList.add('active');
-                }
-            });
-        });
-    </script>
-
 
     <p class="small-text">&copy; 2024 Hayden Kong & SmartFoods. All rights reserved.</p>
     <script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>

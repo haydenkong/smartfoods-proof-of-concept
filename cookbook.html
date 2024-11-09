@@ -71,7 +71,7 @@
                 <i class="fas fa-receipt"></i>
                 <span>MyLocal</span>
             </a>
-            <a href="cookbook.html" class="nav-item">
+            <a href="cookbook.html" class="nav-item active">
                 <i class="fas fa-apple-alt"></i>
                 <span>Cookbook</span>
             </a>
@@ -179,18 +179,6 @@
 
         <div id="results" class="row"></div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Highlight active nav item
-            const currentPage = window.location.pathname;
-            document.querySelectorAll('.nav-item').forEach(item => {
-                if (item.getAttribute('href') === currentPage.split('/').pop()) {
-                    item.classList.add('active');
-                }
-            });
-        });
-    </script>
 
     <script>
         const apiKeyInput = document.getElementById('apiKey');
