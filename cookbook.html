@@ -91,11 +91,6 @@
             <div class="col-md-8">
                 <div class="card">
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">API Key</label>
-                            <input type="text" id="apiKey" class="form-control" 
-                                   placeholder="Enter your Spoonacular API key">
-                        </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -182,7 +177,6 @@
     </div>
 
     <script>
-        const apiKeyInput = document.getElementById('apiKey');
         const ingredientsInput = document.getElementById('ingredients');
         const searchBtn = document.getElementById('searchBtn');
         const loadingDiv = document.getElementById('loading');
@@ -191,7 +185,7 @@
         searchBtn.addEventListener('click', () => searchRecipes());
 
         async function searchRecipes(page = 1) {
-            const apiKey = apiKeyInput.value.trim();
+            const apiKey = "fed20b772b984cc1aa4b9ded0549e676";
             const searchQuery = document.getElementById('searchQuery').value.trim();
             const ingredients = ingredientsInput.value.trim();
             const diet = document.getElementById('diet').value;
