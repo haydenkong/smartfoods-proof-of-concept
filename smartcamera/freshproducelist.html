@@ -188,7 +188,7 @@
         });
 
         async function processImageAndText(file) {
-            const genAI = new GoogleGenerativeAI("AIzaSyC2upWnhjwySZj1NZfBdFPgk4kxi0uQvqo");
+            const genAI = new GoogleGenerativeAI("AIzaSyCB-EDQgjUn00HJOaAfs8mfGywiYhS55kc");
             const safetySettings = [
                 {
                     category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -208,6 +208,7 @@
                 },
             ];
 
+            // Update Gemini model config
             const model = genAI.getGenerativeModel({
                 model: "gemini-1.5-flash",
                 safetySettings,
@@ -216,24 +217,31 @@
                     responseSchema: {
                         type: "object",
                         properties: {
-                            produce: {
+                            items: {
                                 type: "array",
                                 items: {
                                     type: "object",
                                     properties: {
                                         name: { type: "string" },
-                                        shelfLife: { type: "number" },
-                                        quantity: { type: "number" }
+                                        quantity: { type: "number" },
+                                        shelfLife: { type: "number" } // AI returns days, we'll convert to date
                                     }
                                 }
                             }
                         }
                     }
-                },
+                }
             });
             
             const imagePart = await fileToGenerativePart(file);
-            const content = ['Analyze this image of fresh produce. Identify each type of produce, estimate how many days it will take to go bad (shelf life), and count the quantity. Return the result in the specified JSON format with an array of produce items. Each item should have a name, shelfLife (in days), and quantity. If you cannot identify any produce, return an empty array.', imagePart];
+            const content = [
+                'Analyze this image of fresh produce. For each item identify:\n' +
+                '1. Full product name (no abbreviations)\n' +
+                '2. Quantity (numeric count)\n' + 
+                '3. Estimated shelf life in days based on typical storage conditions\n' +
+                'Return JSON with array of items. Each item needs name, quantity, and shelfLife (in days).',
+                imagePart
+            ];
             
             const result = await model.generateContent(content);
             const response = await result.response;
@@ -243,41 +251,48 @@
         function displayResult(resultText) {
             const resultObj = JSON.parse(resultText);
             const produceList = document.getElementById('produceList');
-            produceList.innerHTML = ''; // Clear previous results
+            produceList.innerHTML = '';
 
-            if (resultObj.produce && resultObj.produce.length > 0) {
-                currentProduce = resultObj.produce;
-                resultObj.produce.forEach((item, index) => {
+            if (resultObj.items && resultObj.items.length > 0) {
+                const foodItems = resultObj.items.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    shelfLife: new Date(Date.now() + (item.shelfLife * 86400000)).toISOString().split('T')[0]
+                }));
+                
+                // Display items
+                foodItems.forEach((item, index) => {
                     const li = document.createElement('li');
+                    const expiryDate = new Date(item.shelfLife);
                     li.innerHTML = `
-                        <span>${item.name} - Quantity: ${item.quantity}, Estimated shelf life: ${item.shelfLife} days</span>
+                        <span>${item.name} - Quantity: ${item.quantity}, Expires: ${expiryDate.toLocaleDateString()}</span>
                         <div>
                             <i class="fas fa-edit edit-icon" data-index="${index}"></i>
                             <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
                         </div>
                     `;
-                    li.dataset.index = index;
                     produceList.appendChild(li);
                 });
 
-                // Add event listeners for edit and delete icons
-                document.querySelectorAll('#produceList .edit-icon').forEach(icon => {
-                    icon.addEventListener('click', function() {
-                        const index = parseInt(this.dataset.index);
-                        editItem(index);
-                    });
+                // Save button handler
+                document.getElementById('addButton').addEventListener('click', function() {
+                    let myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
+                    
+                    // Convert produce items to unified format
+                    const newItems = currentProduce.map(item => ({
+                        name: item.name,
+                        quantity: item.quantity,
+                        shelfLife: new Date(Date.now() + (item.shelfLife * 86400000)).toISOString().split('T')[0],
+                        source: 'produce'
+                    }));
+                    
+                    myFoodItems = myFoodItems.concat(newItems);
+                    localStorage.setItem('myFoodItems', JSON.stringify(myFoodItems));
+                    
+                    displayStoredItems();
+                    this.innerHTML = '<i class="fa-solid fa-check"></i> Added';
+                    this.disabled = true;
                 });
-                document.querySelectorAll('#produceList .delete-icon').forEach(icon => {
-                    icon.addEventListener('click', function() {
-                        const index = parseInt(this.dataset.index);
-                        currentProduce.splice(index, 1);
-                        displayResult(JSON.stringify({ produce: currentProduce }));
-                    });
-                });
-            } else {
-                const li = document.createElement('li');
-                li.textContent = 'No fresh produce identified in the image.';
-                produceList.appendChild(li);
             }
         }
 
@@ -354,12 +369,23 @@
         function displayStoredItems() {
             const storedList = document.getElementById('storedList');
             storedList.innerHTML = '';
-            const storedItems = JSON.parse(localStorage.getItem('storedProduce')) || [];
-            storedItems.forEach((item, index) => {
+            
+            const myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
+            const produceItems = myFoodItems.filter(item => item.source === 'produce');
+            
+            produceItems.forEach((item, index) => {
+                const expiryDate = new Date(item.shelfLife);
+                const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+                
                 const li = document.createElement('li');
                 li.innerHTML = `
-                    <span>${item.name} - Quantity: ${item.quantity}, Estimated shelf life: ${item.shelfLife} days</span>
-                    <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
+                    <span>${item.name} - ${item.quantity}</span>
+                    <div>
+                        <span class="text-${daysUntilExpiry <= 3 ? 'danger' : 'muted'}">
+                            Expires: ${expiryDate.toLocaleDateString()}
+                        </span>
+                        <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
+                    </div>
                 `;
                 storedList.appendChild(li);
             });

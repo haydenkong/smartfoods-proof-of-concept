@@ -212,7 +212,7 @@
         });
 
         async function processImageAndText(file) {
-            const genAI = new GoogleGenerativeAI("AIzaSyC2upWnhjwySZj1NZfBdFPgk4kxi0uQvqo");
+            const genAI = new GoogleGenerativeAI("AIzaSyCB-EDQgjUn00HJOaAfs8mfGywiYhS55kc");
             const safetySettings = [
                 {
                     category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -232,76 +232,97 @@
                 },
             ];
 
+            // Update Gemini model config for receipt scanning
             const model = genAI.getGenerativeModel({
-                model: "gemini-1.5-pro-latest",
+                model: "gemini-1.5-flash",
                 safetySettings,
                 generationConfig: { 
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: "object",
                         properties: {
-                            isReceipt: { type: "boolean" },
-                            products: {
+                            items: {
                                 type: "array",
                                 items: {
                                     type: "object",
                                     properties: {
                                         name: { type: "string" },
-                                        quantity: { type: "string" }
+                                        quantity: { type: "number" },
+                                        shelfLife: { type: "number" } // AI estimates shelf life in days
                                     }
                                 }
                             }
                         }
                     }
-                },
+                }
             });
             
             const imagePart = await fileToGenerativePart(file);
-            const content = ['Analyze this image. If it is a receipt, set isReceipt to true and list all the products you see in the products array. The product names in the receipt may be shortened or abbreviated. Make sure that your final output does not contain abbreviations or shortened words. Each product should have a name (full name, not abbreviated) and quantity as listed in the receipt (e.g., "120g" or "2 pcs") WHICH DOES NOT MEAN EXACTLY AS THE RECEIPT, Never use GRAM, MILIMETERS etc. ALWAYS use g and ml instead. Perkg means per kilograms and the price was calculated per kg. Their should be more information right below the Perkg line with how much the weight was. If it is not a receipt, set isReceipt to false and leave the products array empty. Return the result in the specified JSON format.', imagePart];
+            // Update prompt to include shelf life estimation
+            const content = [
+                'Analyze this receipt image. For each item identify:\n' +
+                '1. Full product name (no abbreviations)\n' +
+                '2. Quantity as number\n' +
+                '3. Estimated shelf life in days for each product type\n' +
+                'Return JSON with array of items containing name, quantity, and shelfLife.',
+                imagePart
+            ];
             
             const result = await model.generateContent(content);
             const response = await result.response;
             return response.text();
         }
 
+        // Update displayResult function
         function displayResult(resultText) {
             const resultObj = JSON.parse(resultText);
             const productList = document.getElementById('productList');
-            productList.innerHTML = ''; // Clear previous results
+            productList.innerHTML = '';
 
-            if (resultObj.isReceipt) {
-                currentProducts = resultObj.products;
-                resultObj.products.forEach((product, index) => {
+            if (resultObj.items && resultObj.items.length > 0) {
+                const foodItems = resultObj.items.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    shelfLife: new Date(Date.now() + (item.shelfLife * 86400000)).toISOString().split('T')[0]
+                }));
+                
+                foodItems.forEach((item, index) => {
                     const li = document.createElement('li');
+                    const expiryDate = new Date(item.shelfLife);
                     li.innerHTML = `
-                        <span>${product.name} - ${product.quantity}</span>
+                        <span>${item.name} - Quantity: ${item.quantity}, Expires: ${expiryDate.toLocaleDateString()}</span>
                         <div>
                             <i class="fas fa-edit edit-icon" data-index="${index}"></i>
                             <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
                         </div>
                     `;
-                    li.dataset.index = index;
                     productList.appendChild(li);
                 });
 
-                // Add event listeners for edit and delete icons
-                document.querySelectorAll('#productList .edit-icon').forEach(icon => {
-                    icon.addEventListener('click', function() {
-                        const index = parseInt(this.dataset.index);
-                        editItem(index);
-                    });
+                document.getElementById('addButton').addEventListener('click', function() {
+                    // Get current items from unified storage
+                    let myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
+                    
+                    // Convert receipt items to unified format with shelf life dates
+                    const newItems = currentProducts.map(item => ({
+                        name: item.name,
+                        quantity: item.quantity,
+                        // Default shelf life 30 days from now for receipt items
+                        shelfLife: new Date(Date.now() + (30 * 86400000)).toISOString().split('T')[0],
+                        source: 'receipt'
+                    }));
+                    
+                    // Add new items
+                    myFoodItems = myFoodItems.concat(newItems);
+                    
+                    // Save to unified storage
+                    localStorage.setItem('myFoodItems', JSON.stringify(myFoodItems));
+                    
+                    // Update UI
+                    displayStoredItems();
+                    this.innerHTML = '<i class="fa-solid fa-check"></i> Added';
+                    this.disabled = true;
                 });
-                document.querySelectorAll('#productList .delete-icon').forEach(icon => {
-                    icon.addEventListener('click', function() {
-                        const index = parseInt(this.dataset.index);
-                        currentProducts.splice(index, 1);
-                        displayResult(JSON.stringify({ isReceipt: true, products: currentProducts }));
-                    });
-                });
-            } else {
-                const li = document.createElement('li');
-                li.textContent = 'The uploaded image is not a receipt.';
-                productList.appendChild(li);
             }
         }
 
@@ -368,22 +389,39 @@
         function displayStoredItems() {
             const storedList = document.getElementById('storedList');
             storedList.innerHTML = '';
-            const storedItems = JSON.parse(localStorage.getItem('storedItems')) || [];
-            storedItems.forEach((item, index) => {
+            
+            // Get items from unified storage
+            const myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
+            
+            // Only show receipt items in this view
+            const receiptItems = myFoodItems.filter(item => item.source === 'receipt');
+            
+            receiptItems.forEach((item, index) => {
+                const expiryDate = new Date(item.shelfLife);
+                const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+                
                 const li = document.createElement('li');
                 li.innerHTML = `
                     <span>${item.name} - ${item.quantity}</span>
-                    <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
+                    <div>
+                        <span class="text-${daysUntilExpiry <= 3 ? 'danger' : 'muted'}">
+                            Expires: ${expiryDate.toLocaleDateString()}
+                        </span>
+                        <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
+                    </div>
                 `;
                 storedList.appendChild(li);
             });
 
-            // Add event listeners for delete icons in stored items
+            // Add delete handlers
             document.querySelectorAll('#storedList .delete-icon').forEach(icon => {
                 icon.addEventListener('click', function() {
                     const index = parseInt(this.dataset.index);
-                    storedItems.splice(index, 1);
-                    localStorage.setItem('storedItems', JSON.stringify(storedItems));
+                    let myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
+                    myFoodItems = myFoodItems.filter((item, i) => 
+                        !(item.source === 'receipt' && i === index)
+                    );
+                    localStorage.setItem('myFoodItems', JSON.stringify(myFoodItems));
                     displayStoredItems();
                 });
             });
