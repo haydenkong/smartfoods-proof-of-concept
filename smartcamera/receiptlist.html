@@ -273,24 +273,22 @@
             return response.text();
         }
 
-        // Update displayResult function
+        // Fix displayResult function to properly store currentProducts
         function displayResult(resultText) {
             const resultObj = JSON.parse(resultText);
             const productList = document.getElementById('productList');
             productList.innerHTML = '';
 
             if (resultObj.items && resultObj.items.length > 0) {
-                const foodItems = resultObj.items.map(item => ({
-                    name: item.name,
-                    quantity: item.quantity,
-                    shelfLife: new Date(Date.now() + (item.shelfLife * 86400000)).toISOString().split('T')[0]
-                }));
+                // Store items in currentProducts
+                currentProducts = resultObj.items;
                 
-                foodItems.forEach((item, index) => {
+                // Display items
+                currentProducts.forEach((item, index) => {
                     const li = document.createElement('li');
-                    const expiryDate = new Date(item.shelfLife);
+                    li.dataset.index = index;
                     li.innerHTML = `
-                        <span>${item.name} - Quantity: ${item.quantity}, Expires: ${expiryDate.toLocaleDateString()}</span>
+                        <span>${item.name} - Quantity: ${item.quantity}</span>
                         <div>
                             <i class="fas fa-edit edit-icon" data-index="${index}"></i>
                             <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
@@ -299,33 +297,13 @@
                     productList.appendChild(li);
                 });
 
-                document.getElementById('addButton').addEventListener('click', function() {
-                    // Get current items from unified storage
-                    let myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
-                    
-                    // Convert receipt items to unified format with shelf life dates
-                    const newItems = currentProducts.map(item => ({
-                        name: item.name,
-                        quantity: item.quantity,
-                        // Default shelf life 30 days from now for receipt items
-                        shelfLife: new Date(Date.now() + (30 * 86400000)).toISOString().split('T')[0],
-                        source: 'receipt'
-                    }));
-                    
-                    // Add new items
-                    myFoodItems = myFoodItems.concat(newItems);
-                    
-                    // Save to unified storage
-                    localStorage.setItem('myFoodItems', JSON.stringify(myFoodItems));
-                    
-                    // Update UI
-                    displayStoredItems();
-                    this.innerHTML = '<i class="fa-solid fa-check"></i> Added';
-                    this.disabled = true;
-                });
+                // Show action buttons
+                document.getElementById('editButton').style.display = 'inline-block';
+                document.getElementById('addButton').style.display = 'inline-block';
             }
         }
 
+        // Fix editItem function to preserve original shelfLife
         function editItem(index) {
             const item = document.querySelector(`#productList li[data-index="${index}"]`);
             const product = currentProducts[index];
@@ -336,7 +314,7 @@
             nameInput.className = 'edit-input';
 
             const quantityInput = document.createElement('input');
-            quantityInput.type = 'text';
+            quantityInput.type = 'number';
             quantityInput.value = product.quantity;
             quantityInput.className = 'edit-input';
 
@@ -344,9 +322,12 @@
             saveButton.textContent = 'Save';
             saveButton.className = 'b-primary';
             saveButton.addEventListener('click', function() {
-                product.name = nameInput.value;
-                product.quantity = quantityInput.value;
-                displayResult(JSON.stringify({ isReceipt: true, products: currentProducts }));
+                currentProducts[index] = {
+                    name: nameInput.value,
+                    quantity: parseInt(quantityInput.value),
+                    shelfLife: product.shelfLife // Preserve original shelf life from AI
+                };
+                displayResult({ items: currentProducts });
             });
 
             item.innerHTML = '';
@@ -369,66 +350,59 @@
             });
         }
 
-        document.getElementById('editButton').addEventListener('click', function() {
-            const productList = document.getElementById('productList');
-            const items = productList.getElementsByTagName('li');
+        // Fix add button click handler
+        document.getElementById('addButton').addEventListener('click', function() {
+            // Get existing items
+            let myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
+            
+            // Format new items before adding - using values directly from AI
+            const newItems = currentProducts.map(item => ({
+                name: item.name,
+                quantity: parseInt(item.quantity),
+                shelfLife: new Date(Date.now() + (item.shelfLife * 86400000)).toISOString().split('T')[0],
+                source: 'receipt'
+            }));
+            
+            // Add new items
+            myFoodItems = myFoodItems.concat(newItems);
+            
+            // Save to localStorage
+            localStorage.setItem('myFoodItems', JSON.stringify(myFoodItems));
+            
+            // Update UI and redirect
+            this.innerHTML = '<i class="fa-solid fa-check"></i> Added';
+            this.disabled = true;
+            window.location.href = '/myfood.html';
+        });
 
-            for (let i = 0; i < items.length; i++) {
-                editItem(i);
+        // Add delete functionality
+        function deleteItem(index) {
+            currentProducts.splice(index, 1);
+            displayResult({ items: currentProducts });
+        }
+
+        // Add event delegation for delete icons
+        document.getElementById('productList').addEventListener('click', function(e) {
+            if (e.target.classList.contains('delete-icon')) {
+                const index = parseInt(e.target.dataset.index);
+                deleteItem(index);
+            } else if (e.target.classList.contains('edit-icon')) {
+                const index = parseInt(e.target.dataset.index);
+                editItem(index);
             }
         });
 
-        document.getElementById('addButton').addEventListener('click', function() {
-            let storedItems = JSON.parse(localStorage.getItem('storedItems')) || [];
-            storedItems = storedItems.concat(currentProducts);
-            localStorage.setItem('storedItems', JSON.stringify(storedItems));
-            displayStoredItems();
-            this.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 5px;"></i>Added succesfully';
+        // Remove duplicate event listeners
+        document.getElementById('editButton').addEventListener('click', function() {
+            const productList = document.getElementById('productList');
+            const items = productList.getElementsByTagName('li');
+            Array.from(items).forEach((item, index) => {
+                editItem(index);
+            });
         });
 
-        function displayStoredItems() {
-            const storedList = document.getElementById('storedList');
-            storedList.innerHTML = '';
-            
-            // Get items from unified storage
-            const myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
-            
-            // Only show receipt items in this view
-            const receiptItems = myFoodItems.filter(item => item.source === 'receipt');
-            
-            receiptItems.forEach((item, index) => {
-                const expiryDate = new Date(item.shelfLife);
-                const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-                
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span>${item.name} - ${item.quantity}</span>
-                    <div>
-                        <span class="text-${daysUntilExpiry <= 3 ? 'danger' : 'muted'}">
-                            Expires: ${expiryDate.toLocaleDateString()}
-                        </span>
-                        <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
-                    </div>
-                `;
-                storedList.appendChild(li);
-            });
-
-            // Add delete handlers
-            document.querySelectorAll('#storedList .delete-icon').forEach(icon => {
-                icon.addEventListener('click', function() {
-                    const index = parseInt(this.dataset.index);
-                    let myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
-                    myFoodItems = myFoodItems.filter((item, i) => 
-                        !(item.source === 'receipt' && i === index)
-                    );
-                    localStorage.setItem('myFoodItems', JSON.stringify(myFoodItems));
-                    displayStoredItems();
-                });
-            });
-        }
-
-        // Initial display of stored items
-        displayStoredItems();
+        // Remove old displayStoredItems call since we're redirecting
+        displayStoredItems = null;
     </script>
 
     <p class="small-text">&copy; 2024 Hayden Kong & SmartFoods. All rights reserved.</p>

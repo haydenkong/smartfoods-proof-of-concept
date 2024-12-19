@@ -69,6 +69,56 @@
         </div>
     </div>
 
+    <script>
+        function displayFoodItems() {
+            const foodList = document.querySelector('.container');
+            const myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
+            
+            let html = `
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <h2>MyFoods</h2>
+                    <a href="smartcamera/options.html">
+                        <button class="b-primary">Add <i class="fa-solid fa-plus"></i></button>
+                    </a>
+                </div>
+                <div id="foodList">
+            `;
+            
+            html += myFoodItems.map((item, index) => {
+                const expiryDate = new Date(item.shelfLife);
+                const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+                
+                return `
+                    <div class="mobile-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${item.name}</strong> - Qty: ${item.quantity}
+                                <br>
+                                <span class="text-${daysUntilExpiry <= 3 ? 'danger' : 'muted'}">
+                                    Expires: ${expiryDate.toLocaleDateString()}
+                                </span>
+                            </div>
+                            <i class="fas fa-trash-alt delete-icon" onclick="deleteItem(${index})"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<p>No items added yet</p>';
+            
+            html += '</div>';
+            foodList.innerHTML = html;
+        }
+
+        function deleteItem(index) {
+            let myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
+            myFoodItems.splice(index, 1);
+            localStorage.setItem('myFoodItems', JSON.stringify(myFoodItems));
+            displayFoodItems();
+        }
+
+        // Initial display
+        displayFoodItems();
+    </script>
+
     <p class="small-text">&copy; 2024 Hayden Kong & SmartFoods. All rights reserved.</p>
     <script src="https://kit.fontawesome.com/dad552d9bf.js" crossorigin="anonymous"></script>
 </body>

@@ -248,24 +248,23 @@
             return response.text();
         }
 
+        // Fix displayResult function to properly store currentProduce
         function displayResult(resultText) {
             const resultObj = JSON.parse(resultText);
             const produceList = document.getElementById('produceList');
             produceList.innerHTML = '';
 
             if (resultObj.items && resultObj.items.length > 0) {
-                const foodItems = resultObj.items.map(item => ({
-                    name: item.name,
-                    quantity: item.quantity,
-                    shelfLife: new Date(Date.now() + (item.shelfLife * 86400000)).toISOString().split('T')[0]
-                }));
+                // Store items in currentProduce for later use
+                currentProduce = resultObj.items;
                 
                 // Display items
-                foodItems.forEach((item, index) => {
+                currentProduce.forEach((item, index) => {
                     const li = document.createElement('li');
-                    const expiryDate = new Date(item.shelfLife);
+                    li.dataset.index = index;  // Add data-index
+                    const expiryDate = new Date(Date.now() + (item.shelfLife * 86400000));
                     li.innerHTML = `
-                        <span>${item.name} - Quantity: ${item.quantity}, Expires: ${expiryDate.toLocaleDateString()}</span>
+                        <span>${item.name} - Quantity: ${item.quantity}, Shelf Life: ${item.shelfLife} days</span>
                         <div>
                             <i class="fas fa-edit edit-icon" data-index="${index}"></i>
                             <i class="fas fa-trash-alt delete-icon" data-index="${index}"></i>
@@ -274,28 +273,13 @@
                     produceList.appendChild(li);
                 });
 
-                // Save button handler
-                document.getElementById('addButton').addEventListener('click', function() {
-                    let myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
-                    
-                    // Convert produce items to unified format
-                    const newItems = currentProduce.map(item => ({
-                        name: item.name,
-                        quantity: item.quantity,
-                        shelfLife: new Date(Date.now() + (item.shelfLife * 86400000)).toISOString().split('T')[0],
-                        source: 'produce'
-                    }));
-                    
-                    myFoodItems = myFoodItems.concat(newItems);
-                    localStorage.setItem('myFoodItems', JSON.stringify(myFoodItems));
-                    
-                    displayStoredItems();
-                    this.innerHTML = '<i class="fa-solid fa-check"></i> Added';
-                    this.disabled = true;
-                });
+                // Show action buttons
+                document.getElementById('editButton').style.display = 'inline-block';
+                document.getElementById('addButton').style.display = 'inline-block';
             }
         }
 
+        // Fix editItem function
         function editItem(index) {
             const item = document.querySelector(`#produceList li[data-index="${index}"]`);
             const produce = currentProduce[index];
@@ -319,10 +303,12 @@
             saveButton.textContent = 'Save';
             saveButton.className = 'b-primary';
             saveButton.addEventListener('click', function() {
-                produce.name = nameInput.value;
-                produce.quantity = parseInt(quantityInput.value);
-                produce.shelfLife = parseInt(shelfLifeInput.value);
-                displayResult(JSON.stringify({ produce: currentProduce }));
+                currentProduce[index] = {
+                    name: nameInput.value,
+                    quantity: parseInt(quantityInput.value),
+                    shelfLife: parseInt(shelfLifeInput.value)
+                };
+                displayResult({ items: currentProduce });
             });
 
             item.innerHTML = '';
@@ -331,6 +317,47 @@
             item.appendChild(shelfLifeInput);
             item.appendChild(saveButton);
         }
+
+        // Fix add button click handler
+        document.getElementById('addButton').addEventListener('click', function() {
+            // Get existing items
+            let myFoodItems = JSON.parse(localStorage.getItem('myFoodItems')) || [];
+            
+            // Format new items before adding
+            const newItems = currentProduce.map(item => ({
+                name: item.name,
+                quantity: parseInt(item.quantity),
+                shelfLife: new Date(Date.now() + (item.shelfLife * 86400000)).toISOString().split('T')[0],
+                source: 'produce'
+            }));
+            
+            // Add new items
+            myFoodItems = myFoodItems.concat(newItems);
+            
+            // Save to localStorage
+            localStorage.setItem('myFoodItems', JSON.stringify(myFoodItems));
+            
+            // Update UI
+            this.innerHTML = '<i class="fa-solid fa-check"></i> Added';
+            this.disabled = true;
+            
+            // Redirect to MyFoods page
+            window.location.href = '/myfood.html';
+        });
+
+        // Add delete functionality
+        function deleteItem(index) {
+            currentProduce.splice(index, 1);
+            displayResult({ items: currentProduce });
+        }
+
+        // Add event delegation for delete icons
+        document.getElementById('produceList').addEventListener('click', function(e) {
+            if (e.target.classList.contains('delete-icon')) {
+                const index = parseInt(e.target.dataset.index);
+                deleteItem(index);
+            }
+        });
 
         async function fileToGenerativePart(file) {
             return new Promise((resolve, reject) => {
